@@ -25,6 +25,7 @@ function getUrlSearchValue(key) {
 		let pos2 = (-1 != pos1) ? search.indexOf("&", pos1) : search.length;
 		return search.substring(pos1, pos2);
 	}
+	return "";
 };
 
 function getParentLocalStorageItem(key) {
@@ -481,6 +482,7 @@ function onClickInstall(target) {
 		guid : guid,
 		config : plugin
 	};
+	message.config.baseUrl = plugin.url.substr(0, plugin.url.length - "config.json".length);
 	sendMessage(message);
 };
 
@@ -495,6 +497,7 @@ function onClickUpdate(target) {
 		guid : guid,
 		config : plugin
 	};
+	message.config.baseUrl = plugin.url.substr(0, plugin.url.length - "config.json".length);
 	sendMessage(message);
 };
 
