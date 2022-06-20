@@ -16,6 +16,17 @@
  *
  */
 
+function getUrlSearchValue(key) {
+	if (window.location && window.location.search) {
+		let search = window.location.search;
+		let pos1 = search.indexOf(key + "=");
+		if (-1 == pos1)
+			return "";
+		let pos2 = (-1 != pos1) ? search.indexOf("&", pos1) : search.length;
+		return search.substring(pos1, pos2);
+	}
+};
+
 function getParentLocalStorageItem(key) {
 	return "";
 	return parent.localStorage.getItem(key);
@@ -287,25 +298,10 @@ function sendMessage(message) {
 };
 
 function detectLanguage() {
-	// this function detects current language
-	if (parent.location && parent.location.search) {
-		let _langSearch = parent.location.search;
-		let _pos1 = _langSearch.indexOf("lang=");
-		let _pos2 = (-1 != _pos1) ? _langSearch.indexOf("&", _pos1) : -1;
-		let _lang = null;
-		if (_pos1 >= 0) {
-			_pos1 += 5;
-
-			if (_pos2 < 0)
-				_pos2 = _langSearch.length;
-
-			_lang = _langSearch.substr(_pos1, _pos2 - _pos1);
-			if (_lang.length == 2) {
-				_lang = (_lang.toLowerCase() + "-" + _lang.toUpperCase());
-			}
-		}
-		return _lang;
-	}
+	let lang = getUrlSearchValue("lang");
+	if (lang.length == 2)
+		lang = (lang.toLowerCase() + "-" + lang.toUpperCase());
+	return lang;
 };
 
 function initElemnts() {
