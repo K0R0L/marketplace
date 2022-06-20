@@ -16,6 +16,15 @@
  *
  */
 
+function getParentLocalStorageItem(key) {
+	return "";
+	return parent.localStorage.getItem(key);
+}
+function getParentLocalStorageItemJSON(key) {
+	return {};
+	return JSON.parse(parent.localStorage.getItem(key));
+}
+
 let allPlugins;                                               // list of all plugins from config
 let installedPlugins;                                         // list of intalled plugins
 const configUrl = './config.json';                            // url to config.json
@@ -24,7 +33,7 @@ const isDesctop = window.AscDesktopEditor !== undefined;      // desctop detecti
 let isLoading = false;                                        // flag loading
 let loader;                                                   // loader
 var Ps;                                                       // perfect scrollbar
-let theme = parent.localStorage.getItem('ui-theme-id') || ''; // current theme
+let theme = getParentLocalStorageItem('ui-theme-id') || ''; // current theme
 const lang = detectLanguage() || "en-EN";                     // current language
 const shortLang = lang.split('-')[0];                         // short language
 let bTranslate = false;                                       // flag translate or not
@@ -74,7 +83,7 @@ let row;
 window.Asc = {
 	plugin : {
 		theme : {
-			type :  JSON.parse(parent.localStorage.getItem('ui-theme')).type
+			type :  getParentLocalStorageItemJSON('ui-theme').type
 		}
 	}
 }
