@@ -554,6 +554,10 @@ function onClickItem(target) {
 	let plugin = allPlugins.find(function(el) {
 		return (el.guid == guid);
 	});
+	if (!plugin) {
+		plugin = installed.obj;
+		plugin.url = installed.url;
+	}
 
 	let bHasUpdate = false;
 	if (isDesctop && installed) {
