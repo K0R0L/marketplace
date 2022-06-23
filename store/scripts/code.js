@@ -28,7 +28,7 @@ function getUrlSearchValue(key) {
 	}
 	return res;
 };
-
+let start = Date.now();
 let allPlugins;                                               // list of all plugins from config
 let installedPlugins;                                         // list of intalled plugins
 const configUrl = './config.json';                            // url to config.json
@@ -157,6 +157,7 @@ window.addEventListener('message', function(message) {
 	switch (message.type) {
 		case 'InstalledPlugins':
 			installedPlugins = message.data;
+			console.log('getInstalledPlugins: ' + (Date.now() - start));
 			if (allPlugins)
 				getAllPluginsData();
 			break;
@@ -285,10 +286,7 @@ function makeRequest(url) {
 		xhr.onload = function () {
 			if (this.readyState == 4) {
 				if (this.status == 200 || location.href.indexOf("file:") == 0) {
-					setTimeout(() => {
-						resolve(this.response);
-					}, 500);
-					// resolve(this.response);
+					resolve(this.response);
 				}
 				if (this.status >= 400) {
 					reject(new Error(this.response));
@@ -370,6 +368,7 @@ function getAllPluginsData() {
 				arr[i] = config;
 				// Ps.update();
 				if (!counter) {
+					console.log('getAllPluginsData: ' + (Date.now() - start));
 					isLoading = false;
 					showListofPlugins(true);
 					toogleLoader(false);
@@ -390,6 +389,7 @@ function getAllPluginsData() {
 };
 
 function showListofPlugins(bAll) {
+	// TODO возможно надо дождаться получения переводов ()
 	// show list of plugins
 	elements.divMain.innerHTML = "";
 	counter = 0;
@@ -413,6 +413,7 @@ function showListofPlugins(bAll) {
 }
 
 function createPluginDiv(plugin, bInstalled) {
+	console.log('createPluginDiv');
 	// this function creates div (preview) for plugins
 	// TODO может сделать динамическое количество элементов в одной строке
 	if (counter <= 0 || counter >= 4) {
@@ -683,6 +684,7 @@ function getTranslation() {
 					bTranslate = true;
 					makeRequest('./translations/' + (fullName || shortName) + '.json').then(
 						function(res) {
+							console.log('getTranslation: ' + (Date.now() - start));
 							translate = JSON.parse(res);
 							onTranslate();
 						},
@@ -728,6 +730,7 @@ function onTranslate() {
 function showMarketplace() {
 	// show main window to user
 	elements.divBody.classList.remove('hidden');
+	console.log('showMarketplace: ' + (Date.now() - start));
 	// убираем пока шапку, так как в плагине есть своя
 	// elements.divHeader.classList.remove('hidden');
 };
