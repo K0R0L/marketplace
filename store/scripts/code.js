@@ -562,8 +562,8 @@ function onClickItem(target) {
 		if (lastV > installedV)
 			bHasUpdate = true;
 	}
-	let confUrl = plugin.url.replace('raw.githubusercontent', 'github');
-	let pluginUrl = (plugin.url.includes('sdkjs-plugins') ? confUrl.replace('master', 'tree/master').replace('config.json', '') : confUrl.replace('master/config.json', ''));
+	let confUrl = plugin.url.replace('https://onlyoffice.github.io/', 'https://github.com/ONLYOFFICE/onlyoffice.github.io/tree/master/');
+	let pluginUrl = confUrl.replace('/config.json', '');
 	// TODO проблема с тем, что в некоторых иконках плагинов есть отступ сверху, а в некоторых его нет (исходя их этого нужен разный отступ у span справа, чтобы верхние края совпадали)
 	elements.divSelected.setAttribute('data-guid', guid);
 	elements.imgIcon.setAttribute('src', target.children[0].src);
