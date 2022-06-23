@@ -60,7 +60,10 @@ let translate =                                               // translations fo
 	"Get help": "Get help",
 	"with the plugin functionality on our forum." : "with the plugin functionality on our forum.",
 	"Create a new plugin using" : "Create a new plugin using"
-}
+};
+const guidMarkeplace = 'asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}';
+const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/';
+
 //it's necessary because we show loader before all (and getting translations too)
 switch (shortLang) {
 	case 'ru':
@@ -359,6 +362,9 @@ function getAllPluginsData() {
 	let counter = 0;
 	allPlugins.forEach(function(pluginUrl, i, arr) {
 		counter++;
+		if (pluginUrl.indexOf(":/\/") == -1) {
+			pluginUrl = ioUrl + pluginUrl + '/config.json';
+		}
 		makeRequest(pluginUrl).then(
 			function(response) {
 				counter--;
@@ -396,14 +402,15 @@ function showListofPlugins(bAll) {
 	if (bAll) {
 		// show all plugins
 		allPlugins.forEach(function(plugin) {
-			if (plugin)
+			if (plugin && plugin.guid !== guidMarkeplace)
 				createPluginDiv(plugin, false);
 		});
 	} else if (installedPlugins.length) {
 		// show only installed
 		// TODO подумать над тем, что если в списке установленных есть плагин, которого нет в маркетплейсе
 		installedPlugins.forEach(function(plugin) {
-			createPluginDiv(plugin, true);
+			if (plugin.guid !== guidMarkeplace)
+				createPluginDiv(plugin, true);
 		});
 	} else {
 		// if no istalled plugins and my plugins button was clicked
