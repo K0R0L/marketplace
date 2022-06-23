@@ -161,6 +161,10 @@ window.addEventListener('message', function(message) {
 				getAllPluginsData();
 			break;
 		case 'Installed':
+			if (!message.guid) {
+				toogleLoader(false);
+				return;
+			}
 			let plugin = allPlugins.find(function(el){ return el.guid === message.guid});
 			installedPlugins.push(
 				{
@@ -187,6 +191,10 @@ window.addEventListener('message', function(message) {
 			toogleLoader(false);
 			break;
 		case 'Updated':
+			if (!message.guid) {
+				toogleLoader(false);
+				return;
+			}
 			let installed = installedPlugins.find(function(el) {
 				return (el.guid == message.guid);
 			});
@@ -202,6 +210,10 @@ window.addEventListener('message', function(message) {
 			toogleLoader(false);
 			break;
 		case 'Removed':
+			if (!message.guid) {
+				toogleLoader(false);
+				return;
+			}
 			installedPlugins = installedPlugins.filter(function(el){return el.guid !== message.guid});
 
 			if (elements.btnMyPlugins.classList.contains('primary')) {
@@ -235,6 +247,13 @@ window.addEventListener('message', function(message) {
             styleTheme.type = 'text/css';
             styleTheme.innerHTML = message.style + rule;
             document.getElementsByTagName('head')[0].appendChild(styleTheme);
+			break;
+		case 'onExternalMouseUp':
+			var evt = document.createEvent("MouseEvents");
+			evt.initMouseEvent("mouseup", true, true, window, 1, 0, 0, 0, 0,
+				false, false, false, false, 0, null);
+
+			document.dispatchEvent(evt);
 			break;
 	};
 }, false);
@@ -421,7 +440,10 @@ function createPluginDiv(plugin, bInstalled) {
 		plugin = allPlugins.find(function(el){
 			return el.guid === plugin.guid
 		});
-	if (!plugin) return;
+	if (!plugin) {
+		plugin = installed.obj;
+		plugin.url = installed.url
+	}
 	let imageUrl = plugin.url.replace('config.json','');
 	let variations = plugin.variations[0];
 	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
