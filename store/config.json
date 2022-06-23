@@ -1,4 +1,10 @@
 [
 	"https://onlyoffice.github.io/sdkjs-plugins/content/deepl/config.json",
-	"https://onlyoffice.github.io/sdkjs-plugins/content/doc2md/config.json"
+	"https://onlyoffice.github.io/sdkjs-plugins/content/doc2md/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/glavred/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/rainbow/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/speech/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/telegram/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/wordpress/config.json",
+	"https://onlyoffice.github.io/sdkjs-plugins/content/autocomplete/config.json"
 ]
