@@ -170,22 +170,25 @@ window.addEventListener('message', function(message) {
 				return;
 			}
 			let plugin = allPlugins.find(function(el){ return el.guid === message.guid});
-			installedPlugins.push(
-				{
-					url: plugin.url,
-					guid: message.guid,
-					canRemoved: true,
-					obj: plugin
-				}
-			);
-
-			if (elements.btnMarketplace.classList.contains('primary')) {
-				let btn = this.document.getElementById(message.guid).lastChild.lastChild;
-				btn.innerHTML = translate['Remove'];
-				btn.onclick = function(e) {
-					onClickRemove(e.target);
-				};
+			if (plugin) {
+				installedPlugins.push(
+					{
+						url: plugin.url,
+						guid: message.guid,
+						canRemoved: true,
+						obj: plugin
+					}
+				);
+			} else {
+				let installedIndex = installedPlugins.findIndex(function(el) {return el.guid === message.guid});
+				installedPlugins[installedIndex].removed = false;
 			}
+
+			let btn = this.document.getElementById(message.guid).lastChild.lastChild;
+			btn.innerHTML = translate['Remove'];
+			btn.onclick = function(e) {
+				onClickRemove(e.target);
+			};
 
 			if (!elements.divSelected.classList.contains('hidden')) {
 				this.document.getElementById('btn_install').classList.add('hidden');
@@ -218,10 +221,25 @@ window.addEventListener('message', function(message) {
 				toogleLoader(false);
 				return;
 			}
-			installedPlugins = installedPlugins.filter(function(el){return el.guid !== message.guid});
+			let marketPl = allPlugins.find(function(el) {return el.guid === message.guid});
+			let installedIndex = null;
+			if (marketPl) {
+				installedPlugins = installedPlugins.filter(function(el){return el.guid !== message.guid});
+			} else {
+				installedIndex = installedPlugins.findIndex(function(el) {return el.guid === message.guid});
+				installedPlugins[installedIndex].removed = true;
+			}
 
 			if (elements.btnMyPlugins.classList.contains('primary')) {
-				showListofPlugins(false);
+				if (marketPl) {
+					showListofPlugins(false);
+				} else {
+					let btn = this.document.getElementById(message.guid).lastChild.lastChild;
+					btn.innerHTML = translate['Install'];
+					btn.onclick = function(e) {
+						onClickInstall(e.target);
+					};
+				}
 			} else {
 				let btn = this.document.getElementById(message.guid).lastChild.lastChild;
 				btn.innerHTML = translate['Install'];
@@ -450,7 +468,8 @@ function createPluginDiv(plugin, bInstalled) {
 		});
 	if (!plugin) {
 		plugin = installed.obj;
-		plugin.url = installed.url
+		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
+		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
 	}
 	let imageUrl = plugin.url.replace('config.json','');
 	let variations = plugin.variations[0];
@@ -466,8 +485,18 @@ function createPluginDiv(plugin, bInstalled) {
 		}
 		imageUrl += icon['200%'].normal;
 	} else if (!variations.isSystem && imageUrl != '') {
-		// TODO наверно надо переделать во всех плагинах, где это ещё осталось
-		imageUrl += variations.icons[0];
+		let icon = variations.icons[0];
+		if (typeof(icon) == 'object') {
+			for (let i = 0; i < variations.icons.length; i++) {
+				if (themeType.includes(variations.icons[i].style)) {
+					icon = variations.icons[i];
+					break;
+				}
+			}
+			imageUrl += icon['200%'].normal;
+		} else {
+			imageUrl += variations.icons[0];
+		}
 	} else {
 		imageUrl = "./resources/img/defaults/light/icon@2x.png"
 	}
@@ -487,7 +516,7 @@ function createPluginDiv(plugin, bInstalled) {
 							? '<span class="span_update">' + translate["Update"] + '</span>'
 							: ''
 						)+''+
-						(installed
+						( (installed && !installed.removed)
 							? (installed.canRemoved ? '<button class="btn-text-default btn_install" onclick="onClickRemove(event.target)">' + translate["Remove"] + '</button>' : '<div style="height:20px"></div>')
 							: '<button class="btn-text-default btn_install" onclick="onClickInstall(event.target)">'  + translate["Install"] + '</button>'
 						)
@@ -504,11 +533,12 @@ function onClickInstall(target) {
 	toogleLoader(true, "Installation");
 	let guid = target.parentNode.parentNode.getAttribute('data-guid');
 	let plugin = allPlugins.find( function(el) { return el.guid === guid; } );
+	let installed = installedPlugins.find( function(el) { return el.guid === guid; } );
 	let message = {
 		type : 'install',
-		url : plugin.url, //replace('raw.githubusercontent', 'github').replace('master', 'blob/master'),
+		url : (plugin ? plugin.url : installed.baseUrl), //replace('raw.githubusercontent', 'github').replace('master', 'blob/master'),
 		guid : guid,
-		config : plugin
+		config : plugin || installed.obj
 	};
 	// message.config.baseUrl = plugin.url.substr(0, plugin.url.length - "config.json".length);
 	sendMessage(message);
@@ -562,8 +592,12 @@ function onClickItem(target) {
 		return (el.guid == guid);
 	});
 	if (!plugin) {
+		document.getElementById('div_github_link').classList.add('hidden');
 		plugin = installed.obj;
-		plugin.url = installed.url;
+		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
+		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
+	} else {
+		document.getElementById('div_github_link').classList.remove('hidden');
 	}
 
 	let bHasUpdate = false;
@@ -589,7 +623,7 @@ function onClickItem(target) {
 		elements.btnUpdate.classList.add('hidden');
 	}
 
-	if (installed) {
+	if (installed && !installed.removed) {
 		if (installed.canRemoved) {
 			elements.btnRemove.classList.remove('hidden');
 		} else {
