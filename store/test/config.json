@@ -8,6 +8,10 @@
 		"cs": "Správa pluginů"
 	},
 	"guid"       : "asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}",
+	"group": {
+        "name": "Marketplace",
+        "rank": 1
+    },
 	"variations" : [
 		{
 			"description"         : "Marketplace",
