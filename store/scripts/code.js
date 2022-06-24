@@ -441,6 +441,8 @@ function createPluginDiv(plugin, bInstalled) {
 	console.log('createPluginDiv');
 	// this function creates div (preview) for plugins
 	// TODO может сделать динамическое количество элементов в одной строке
+	// TODO врекменный флаг (переделать на загрузку картинок в фоне)
+	let notInMarket = false;
 	if (counter <= 0 || counter >= 4) {
 		row = document.createElement('div');
 		row.className = "div_row"
@@ -467,6 +469,7 @@ function createPluginDiv(plugin, bInstalled) {
 			return el.guid === plugin.guid
 		});
 	if (!plugin) {
+		notInMarket = true;
 		plugin = installed.obj;
 		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
 		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
@@ -498,7 +501,10 @@ function createPluginDiv(plugin, bInstalled) {
 			imageUrl += variations.icons[0];
 		}
 	} else {
-		imageUrl = "./resources/img/defaults/light/icon@2x.png"
+		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
+	}
+	if (notInMarket) {
+		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 	}
 	// TODO подумать от куда брать цвет на фон под картинку (может в config добавить)
 	let name = (bTranslate && plugin.nameLocale && plugin.nameLocale[shortLang]) ? plugin.nameLocale[shortLang] : plugin.name;
