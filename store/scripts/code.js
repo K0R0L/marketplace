@@ -118,7 +118,7 @@ window.addEventListener('message', function(message) {
 			installedPlugins = message.data;
 			console.log('getInstalledPlugins: ' + (Date.now() - start));
 			if (allPlugins)
-				getInstalledPluginsImages();
+				getAllPluginsData();
 			break;
 		case 'Installed':
 			if (!message.guid) {
@@ -264,9 +264,9 @@ function getInstalledPluginsImages() {
 					count--;
 					if (!count) {
 						console.log('load all images = ' + (Date.now() - start));
-						if (allPlugins) {
-							getAllPluginsData();
-						}
+						// if (allPlugins) {
+							// getAllPluginsData();
+						// }
 					}				}
 				reader.readAsDataURL(res);
 			},
@@ -282,10 +282,8 @@ function fetchAllPlugins() {
 	makeRequest(configUrl).then(
 		function(response) {
 			allPlugins = JSON.parse(response);
-			if (installedPlugins) {
-				getInstalledPluginsImages();
+			if (installedPlugins)
 				getAllPluginsData();
-			}
 		},
 		function(err) {
 			createError(err);
@@ -382,6 +380,7 @@ function toogleLoader(show, text) {
 
 function getAllPluginsData() {
 	// get config file for each item in config.json
+	getInstalledPluginsImages();
 	let count = 0;
 	allPlugins.forEach(function(pluginUrl, i, arr) {
 		// todo сделать отдельную переменную для url, чтобы потом в ней не делать реплейс

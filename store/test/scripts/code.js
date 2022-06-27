@@ -16,7 +16,6 @@
  *
  */
 (function(window, undefined) {
-	let ifr; // iframe with marketplace
 
     window.Asc.plugin.init = function() {
 		// resize window
@@ -62,6 +61,7 @@
 
 	window.Asc.plugin.onExternalMouseUp = function() {
 		// mouse up event outside the plugin window
+		let ifr = document.getElementsByTagName('iframe')[0];
 		if (ifr && ifr.contentWindow)
 			ifr.contentWindow.postMessage(JSON.stringify({ type: 'onExternalMouseUp'}), "*");
 	};
@@ -70,6 +70,7 @@
 		// theme changed event
 		window.Asc.plugin.onThemeChangedBase(theme);
 		let style = document.getElementsByTagName('head')[0].lastChild;
+		let ifr = document.getElementsByTagName('iframe')[0];
 		if (ifr && ifr.contentWindow)
 			ifr.contentWindow.postMessage(JSON.stringify({ type: 'Theme', theme: theme, style : style.innerHTML}), "*");
 	};
