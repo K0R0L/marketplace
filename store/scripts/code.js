@@ -117,7 +117,8 @@ window.addEventListener('message', function(message) {
 		case 'InstalledPlugins':
 			installedPlugins = message.data;
 			console.log('getInstalledPlugins: ' + (Date.now() - start));
-			getInstalledPluginsImages();
+			if (allPlugins)
+				getInstalledPluginsImages();
 			break;
 		case 'Installed':
 			if (!message.guid) {
@@ -246,6 +247,7 @@ function getInstalledPluginsImages() {
 	let count = 0;
 	installedPlugins.forEach(function(el, i, arr) {
 		// skip if plugin is in maekreplace
+		
 		let plugin = allPlugins.find(function(pl){return pl.guid === el.guid}) || allPlugins.find(function(pl){return pl === el.obj.name.toLowerCase()});
 		if (plugin)
 			return;
@@ -280,8 +282,10 @@ function fetchAllPlugins() {
 	makeRequest(configUrl).then(
 		function(response) {
 			allPlugins = JSON.parse(response);
-			if (installedPlugins)
+			if (installedPlugins) {
+				getInstalledPluginsImages();
 				getAllPluginsData();
+			}
 		},
 		function(err) {
 			createError(err);
@@ -574,7 +578,7 @@ function onClickItem(target) {
 		if (lastV > installedV)
 			bHasUpdate = true;
 	}
-	
+
 	let pluginUrl = plugin.baseUrl.replace('https://onlyoffice.github.io/', 'https://github.com/ONLYOFFICE/onlyoffice.github.io/tree/master/');
 	// TODO проблема с тем, что в некоторых иконках плагинов есть отступ сверху, а в некоторых его нет (исходя их этого нужен разный отступ у span справа, чтобы верхние края совпадали)
 	elements.divSelected.setAttribute('data-guid', guid);
@@ -781,6 +785,9 @@ function getImageAsBase64(plugin, installed) {
 			imageUrl += variations.icons[0];
 		}
 	} else {
+		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
+	}
+	if (imageUrl.includes('http://')) {
 		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 	}
 	return imageUrl;
