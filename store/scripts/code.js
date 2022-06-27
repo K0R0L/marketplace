@@ -16,54 +16,27 @@
  *
  */
 
-function getUrlSearchValue(key) {
-	let res = '';
-	if (window.location && window.location.search) {
-		let search = window.location.search;
-		let pos1 = search.indexOf(key + '=') + key.length + 1;
-		if (-1 != pos1) {
-			let pos2 = search.indexOf("&", pos1);
-			res = search.substring(pos1, (pos2 != -1 ? pos2 : search.length) )
-		}
-	}
-	return res;
-};
 let start = Date.now();
-let allPlugins;                                               // list of all plugins from config
-let installedPlugins;                                         // list of intalled plugins
-const configUrl = './config.json';                            // url to config.json
-const elements = {};                                          // all elements
-const isDesctop = window.AscDesktopEditor !== undefined;      // desctop detecting
-let isLoading = false;                                        // flag loading
-let loader;                                                   // loader
-let themeType = detectThemeType();                            // current theme
-const lang = detectLanguage();                                // current language
-const shortLang = lang.split('-')[0];                         // short language
-let bTranslate = false;                                       // flag translate or not
-let translate =                                               // translations for current language
-{
-	"My plugins": "My plugins",
-	"Marketplace": "Marketplace",
-	"Submit your own plugin": "Submit your own plugin",
-	"Install plugin manually": "Install plugin manually",
-	"Install": "Install",
-	"Remove": "Remove",
-	"Update": "Update",
-	"Offered by" : "Offered by",
-	"Overview": "Overview",
-	"Info & Support": "Info & Support",
-	"Learn how to use": "Learn how to use",
-	"the plugin in" : "the plugin in",
-	"Contribute": "Contribute",
-	"to the plugin developmen or report an issue on" : "to the plugin developmen or report an issue on",
-	"Get help": "Get help",
-	"with the plugin functionality on our forum." : "with the plugin functionality on our forum.",
-	"Create a new plugin using" : "Create a new plugin using"
-};
-const guidMarkeplace = 'asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}';
-const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/';
+let allPlugins;                                                      // list of all plugins from config
+let installedPlugins;                                                // list of intalled plugins
+const configUrl = './config.json';                                   // url to config.json
+const elements = {};                                                 // all elements
+const isDesctop = window.AscDesktopEditor !== undefined;             // desctop detecting
+const guidMarkeplace = 'asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}'; // guid marketplace
+const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/'; // github.io url
+let isLoading = false;                                               // flag loading
+let loader;                                                          // loader
+let themeType = detectThemeType();                                   // current theme
+let counter = 0;                                                     // counter of number elements in each row inside list of plugins
+let row;                                                             // elemet that represents a row inside list of plugins 
+const lang = detectLanguage();                                       // current language
+const shortLang = lang.split('-')[0];                                // short language
+let bTranslate = false;                                              // flag translate or not
+let translate = {'Loading': 'Loading'};                              // translations for current language
 
-//it's necessary because we show loader before all (and getting translations too)
+//TODO сделать сортировку плагинов по алфавиту
+
+// it's necessary because we show loader before all (and getting translations too)
 switch (shortLang) {
 	case 'ru':
 		translate["Loading"] = "Загрузка"
@@ -81,28 +54,20 @@ switch (shortLang) {
 		translate["Loading"] = "Načítání"
 		break;
 }
-// for making preview
-let counter = 0;
-let row;
 
-// TODO для того, чтобы лоадер работал нормально нужно создать такой объект (так как он из него берет информацию о теме)
+// it's necessary for loader (because it detects theme by this object)
 window.Asc = {
 	plugin : {
 		theme : {
 			type :  themeType
 		}
 	}
-}
+};
 
 // get translation file
 getTranslation();
 // fetch all plugins from config
 fetchAllPlugins();
-// get all installed plugins
-setTimeout(function(){
-	// для того, чтобы плагин успел запуститься и не слать кучу сообщений для временного решения
-	sendMessage({type : 'getInstalled'}, '*');
-}, 500);
 
 window.onload = function() {
 	// init element
@@ -113,24 +78,14 @@ window.onload = function() {
 		showMarketplace();
 	}
 
-	elements.btnMyPlugins.onclick = function() {
+	elements.btnMyPlugins.onclick = function(event) {
 		// click on my plugins button
-		if ( !this.classList.contains('primary') ) {
-			elements.btnMarketplace.classList.remove('submit','primary');
-			this.classList.add('submit','primary');
-			elements.linkNewPlugin.innerHTML = translate["Install plugin manually"];
-			showListofPlugins(false);
-		}
+		toogleView(event.target, elements.btnMarketplace, 'Install plugin manually', false);
 	};
 
-	elements.btnMarketplace.onclick = function() {
+	elements.btnMarketplace.onclick = function(event) {
 		// click on marketplace button
-		if ( !this.classList.contains('primary') ) {
-			elements.btnMyPlugins.classList.remove('submit','primary');
-			this.classList.add('submit','primary');
-			elements.linkNewPlugin.innerHTML = translate["Submit your own plugin"];
-			showListofPlugins(true);
-		}
+		toogleView(event.target, elements.btnMyPlugins, 'Submit your own plugin', true);
 	};
 
 	elements.arrow.onclick = function() {
@@ -154,8 +109,10 @@ window.onload = function() {
 };
 
 window.addEventListener('message', function(message) {
-	// getting messages from editor
+	// getting messages from editor or plugin
 	message = JSON.parse(message.data);
+	let plugin;
+	let installed;
 	switch (message.type) {
 		case 'InstalledPlugins':
 			installedPlugins = message.data;
@@ -164,22 +121,24 @@ window.addEventListener('message', function(message) {
 			break;
 		case 'Installed':
 			if (!message.guid) {
+				// somethimes we can receive such message
 				toogleLoader(false);
 				return;
 			}
-			let plugin = allPlugins.find(function(el){ return el.guid === message.guid});
-			if (plugin) {
+			plugin = allPlugins.find(function(el){return el.guid === message.guid});
+			installed = installedPlugins.find(function(el){return el.guid === message.guid});
+			if (!installed && plugin) {
 				installedPlugins.push(
 					{
-						url: plugin.url,
+						baseUrl: plugin.url,
 						guid: message.guid,
 						canRemoved: true,
-						obj: plugin
+						obj: plugin,
+						removed: false
 					}
 				);
-			} else {
-				let installedIndex = installedPlugins.findIndex(function(el) {return el.guid === message.guid});
-				installedPlugins[installedIndex].removed = false;
+			} else if (installed) {
+				installed.removed = false;
 			}
 
 			let btn = this.document.getElementById(message.guid).lastChild.lastChild;
@@ -197,15 +156,14 @@ window.addEventListener('message', function(message) {
 			break;
 		case 'Updated':
 			if (!message.guid) {
+				// somethimes we can receive such message
 				toogleLoader(false);
 				return;
 			}
-			let installed = installedPlugins.find(function(el) {
-				return (el.guid == message.guid);
-			});
-			let config = allPlugins.find(function(el){ return el.guid === message.guid});
+			installed = installedPlugins.find(function(el){return el.guid == message.guid});
+			plugin = allPlugins.find(function(el){return el.guid === message.guid});
 
-			installed.obj.version = config.version;
+			installed.obj.version = plugin.version;
 
 			if (!elements.divSelected.classList.contains('hidden')) {
 				this.document.getElementById('btn_update').classList.add('hidden');
@@ -216,20 +174,22 @@ window.addEventListener('message', function(message) {
 			break;
 		case 'Removed':
 			if (!message.guid) {
+				// somethimes we can receive such message
 				toogleLoader(false);
 				return;
 			}
-			let marketPl = allPlugins.find(function(el) {return el.guid === message.guid});
-			let installedIndex = null;
-			if (marketPl) {
-				installedPlugins = installedPlugins.filter(function(el){return el.guid !== message.guid});
-			} else {
-				installedIndex = installedPlugins.findIndex(function(el) {return el.guid === message.guid});
-				installedPlugins[installedIndex].removed = true;
+			plugin = allPlugins.find(function(el) {return el.guid === message.guid});
+			installed = installedPlugins.find(function(el){return el.guid === message.guid});
+			if (installed) {
+				if (plugin) {
+					installedPlugins = installedPlugins.filter(function(el){return el.guid !== message.guid});
+				} else {
+					installed.removed = true;
+				}
 			}
 
 			if (elements.btnMyPlugins.classList.contains('primary')) {
-				if (marketPl) {
+				if (plugin) {
 					showListofPlugins(false);
 				} else {
 					let btn = this.document.getElementById(message.guid).lastChild.lastChild;
@@ -244,6 +204,7 @@ window.addEventListener('message', function(message) {
 				btn.onclick = function(e) {
 					onClickInstall(e.target);
 				};
+				
 				if (btn.parentNode.childElementCount > 1) {
 					btn.parentNode.firstChild.remove();
 				}
@@ -270,26 +231,36 @@ window.addEventListener('message', function(message) {
 			break;
 		case 'onExternalMouseUp':
 			let evt = document.createEvent("MouseEvents");
-			evt.initMouseEvent("mouseup", true, true, window, 1, 0, 0, 0, 0,
-				false, false, false, false, 0, null);
-
+			evt.initMouseEvent("mouseup", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
 			document.dispatchEvent(evt);
+			break;
+		case 'PluginReady':
+			// get all installed plugins
+			sendMessage({type: 'getInstalled'}, '*');
 			break;
 	};
 }, false);
 
 function getInstalledPluginsImages() {
-	let counter = 0;
+	// get images as base64 for all intalled plugins
+	let count = 0;
 	installedPlugins.forEach(function(el, i, arr) {
-		counter++;
+		// skip if plugin is in maekreplace
+		let plugin = allPlugins.find(function(pl){return pl.guid === el.guid}) || allPlugins.find(function(pl){return pl === el.obj.name.toLowerCase()});
+		if (plugin)
+			return;
+
+		count++;
+		let temp = el.obj.baseUrl.replace(/\.\.\//g, '');
+		arr[i].obj.url = el.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
 		let imageUrl = getImageAsBase64(el.obj, el);
 		makeRequest(imageUrl, 'blob').then(
 			function (res) {
 				let reader = new FileReader();
 				reader.onloadend = function() {
 					arr[i].obj.imageBase64 = reader.result;
-					counter--;
-					if (!counter) {
+					count--;
+					if (!count) {
 						console.log('load all images = ' + (Date.now() - start));
 						if (allPlugins) {
 							getAllPluginsData();
@@ -297,8 +268,8 @@ function getInstalledPluginsImages() {
 					}				}
 				reader.readAsDataURL(res);
 			},
-			function(err) {
-				console.log(err);
+			function(error) {
+				createError(error);
 			}
 		);
 	});
@@ -327,7 +298,8 @@ function makeRequest(url, responseType) {
 	return new Promise(function (resolve, reject) {
 		let xhr = new XMLHttpRequest();
 		xhr.open('GET', url, true);
-		if (responseType) xhr.responseType = responseType;
+		if (responseType)
+			xhr.responseType = responseType;
 		
 		xhr.onload = function () {
 			if (this.readyState == 4) {
@@ -354,6 +326,7 @@ function sendMessage(message) {
 };
 
 function detectLanguage() {
+	// detect language or return default
 	let lang = getUrlSearchValue("lang");
 	if (lang.length == 2)
 		lang = (lang.toLowerCase() + "-" + lang.toUpperCase());
@@ -361,6 +334,7 @@ function detectLanguage() {
 };
 
 function detectThemeType() {
+	// detect theme or return default
 	let type = getUrlSearchValue("theme-type");
 	return type || 'light';
 };
@@ -385,6 +359,8 @@ function initElemnts() {
 	elements.spanSelectedDescr = document.getElementById('span_selected_description');
 	elements.imgScreenshot = document.getElementById('image_screenshot');
 	elements.linkPlugin = document.getElementById('link_plugin');
+	elements.divScreen = document.getElementById("div_selected_image");
+	elements.divGitLink = document.getElementById('div_github_link');
 };
 
 function toogleLoader(show, text) {
@@ -402,23 +378,21 @@ function toogleLoader(show, text) {
 
 function getAllPluginsData() {
 	// get config file for each item in config.json
-	let counter = 0;
+	let count = 0;
 	allPlugins.forEach(function(pluginUrl, i, arr) {
 		// todo сделать отдельную переменную для url, чтобы потом в ней не делать реплейс
-		counter++;
-		if (pluginUrl.indexOf(":/\/") == -1) {
-			pluginUrl = ioUrl + pluginUrl + '/config.json';
-		}
-		makeRequest(pluginUrl).then(
+		count++;
+		pluginUrl = (pluginUrl.indexOf(":/\/") == -1) ? pluginUrl = ioUrl + pluginUrl + '/' : pluginUrl;
+		let confUrl = pluginUrl + 'config.json';
+		makeRequest(confUrl).then(
 			function(response) {
-				counter--;
+				count--;
 				let config = JSON.parse(response);
-				config.url = pluginUrl;
-				config.baseUrl = pluginUrl.replace('config.json','');// pluginUrl.substr(0, pluginUrl.length - "config.json".length);
+				config.url = confUrl;
+				config.baseUrl = pluginUrl;
 				config.imageBase64 = getImageAsBase64(config, null);
 				arr[i] = config;
-				// Ps.update();
-				if (!counter) {
+				if (!count) {
 					console.log('getAllPluginsData: ' + (Date.now() - start));
 					isLoading = false;
 					showListofPlugins(true);
@@ -428,7 +402,7 @@ function getAllPluginsData() {
 			function(err) {
 				// TODO решить проблему, если не получили конфиг, чтобы у нас не было лишних (пустых элементов)
 				createError(err);
-				if (!counter) {
+				if (!count) {
 					isLoading = false;
 					showListofPlugins(true);
 					toogleLoader(false);
@@ -452,7 +426,6 @@ function showListofPlugins(bAll) {
 		});
 	} else if (installedPlugins.length) {
 		// show only installed
-		// TODO подумать над тем, что если в списке установленных есть плагин, которого нет в маркетплейсе
 		installedPlugins.forEach(function(plugin) {
 			if (plugin.guid !== guidMarkeplace)
 				createPluginDiv(plugin, true);
@@ -479,7 +452,7 @@ function createPluginDiv(plugin, bInstalled) {
 	div.id = plugin.guid;
 	div.setAttribute('data-guid', plugin.guid);
 	div.className = 'div_item';
-	let installed = bInstalled ? plugin : installedPlugins.find( function(el) { return (el.guid == plugin.guid); } );
+	let installed = bInstalled ? plugin : installedPlugins.find(function(el){return(el.guid===plugin.guid)});
 	let bHasUpdate = false;
 	if (isDesctop && installed) {
 		const installedV = (installed.obj.version ? installed.obj.version.split('.').join('') : 1);
@@ -488,15 +461,15 @@ function createPluginDiv(plugin, bInstalled) {
 			bHasUpdate = true;
 	}
 
-	// TODO либо в getInstalled возвращать ещё и url или делать такой поиск для картинки
-	if (bInstalled)
+	if (bInstalled) {
 		plugin = allPlugins.find(function(el){
 			return el.guid === plugin.guid
 		});
+	}
+		
+
 	if (!plugin) {
 		plugin = installed.obj;
-		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
-		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
 	}
 	
 	let variations = plugin.variations[0]
@@ -536,11 +509,10 @@ function onClickInstall(target) {
 	let installed = installedPlugins.find( function(el) { return el.guid === guid; } );
 	let message = {
 		type : 'install',
-		url : (plugin ? plugin.url : installed.baseUrl), //replace('raw.githubusercontent', 'github').replace('master', 'blob/master'),
+		url : (plugin ? plugin.url : installed.baseUrl),
 		guid : guid,
 		config : plugin || installed.obj
 	};
-	// message.config.baseUrl = plugin.url.substr(0, plugin.url.length - "config.json".length);
 	sendMessage(message);
 };
 
@@ -555,7 +527,6 @@ function onClickUpdate(target) {
 		guid : guid,
 		config : plugin
 	};
-	// message.config.baseUrl = plugin.url.substr(0, plugin.url.length - "config.json".length);
 	sendMessage(message);
 };
 
@@ -578,26 +549,22 @@ function onClickItem(target) {
 
 	elements.divSelected.classList.remove('hidden');
 	elements.divSelectedMain.classList.remove('hidden');
-	elements.arrow.classList.remove('hidden');
-	let guid = target.parentNode.getAttribute('data-guid');
 	elements.divBody.classList.add('hidden');
+	elements.arrow.classList.remove('hidden');
+	
+	let guid = target.parentNode.getAttribute('data-guid');
 	let divPreview = document.createElement('div');
 	divPreview.id = 'div_preview';
 	divPreview.className = 'div_preview noselect';
 
-	let installed = installedPlugins.find(function(el) {
-		return (el.guid == guid);
-	});
-	let plugin = allPlugins.find(function(el) {
-		return (el.guid == guid);
-	});
+	let installed = installedPlugins.find(function(el){return(el.guid===guid);});
+	let plugin = allPlugins.find(function(el){return (el.guid == guid);});
+
 	if (!plugin) {
-		document.getElementById('div_github_link').classList.add('hidden');
+		elements.divGitLink.classList.add('hidden');
 		plugin = installed.obj;
-		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
-		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
 	} else {
-		document.getElementById('div_github_link').classList.remove('hidden');
+		elements.divGitLink.classList.remove('hidden');
 	}
 
 	let bHasUpdate = false;
@@ -607,8 +574,8 @@ function onClickItem(target) {
 		if (lastV > installedV)
 			bHasUpdate = true;
 	}
-	let confUrl = plugin.url.replace('https://onlyoffice.github.io/', 'https://github.com/ONLYOFFICE/onlyoffice.github.io/tree/master/');
-	let pluginUrl = confUrl.replace('/config.json', '');
+	
+	let pluginUrl = plugin.baseUrl.replace('https://onlyoffice.github.io/', 'https://github.com/ONLYOFFICE/onlyoffice.github.io/tree/master/');
 	// TODO проблема с тем, что в некоторых иконках плагинов есть отступ сверху, а в некоторых его нет (исходя их этого нужен разный отступ у span справа, чтобы верхние края совпадали)
 	elements.divSelected.setAttribute('data-guid', guid);
 	elements.imgIcon.setAttribute('src', target.children[0].src);
@@ -658,7 +625,6 @@ function onSelectPreview(target, isOverview) {
 		} else {
 			document.getElementById('div_selected_preview').classList.add('hidden');
 			document.getElementById('div_selected_info').classList.remove('hidden');
-
 		}
 	}
 };
@@ -696,11 +662,10 @@ function setDivHeight() {
 	// set height for div with image in preview mode
 	if (Ps) Ps.update();
 	// console.log(Math.round(window.devicePixelRatio * 100));
-	let div = document.getElementById("div_selected_image");
-	if (div) {
-		let height = div.parentNode.clientHeight - div.previousElementSibling.clientHeight - 20 + "px";
-		div.style.height = height;
-		div.style.maxHeight = height;
+	if (elements.divScreen) {
+		let height = elements.divScreen.parentNode.clientHeight - elements.divScreen.previousElementSibling.clientHeight - 20 + "px";
+		elements.divScreen.style.height = height;
+		elements.divScreen.style.maxHeight = height;
 	}
 };
 
@@ -747,6 +712,14 @@ function getTranslation() {
 				showMarketplace();
 			}
 		);
+	} else {
+		translate  = {
+						"Submit your own plugin": "Submit your own plugin",
+						"Install plugin manually": "Install plugin manually",
+						"Install": "Install",
+						"Remove": "Remove",
+						"Update": "Update",
+					 };
 	}
 };
 
@@ -781,14 +754,9 @@ function showMarketplace() {
 };
 
 function getImageAsBase64(plugin, installed) {
+	// get image url for current plugin
 	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
-	let imageUrl;
-	if (installed) {
-		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
-		imageUrl = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
-	} else {
-		imageUrl = plugin.baseUrl;
-	}
+	let imageUrl = installed ? plugin.url : plugin.baseUrl;
 	let variations = plugin.variations[0];
 	if (variations.icons2) {
 		let icon = variations.icons2[0];
@@ -816,4 +784,26 @@ function getImageAsBase64(plugin, installed) {
 		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 	}
 	return imageUrl;
+};
+
+function getUrlSearchValue(key) {
+	let res = '';
+	if (window.location && window.location.search) {
+		let search = window.location.search;
+		let pos1 = search.indexOf(key + '=') + key.length + 1;
+		if (-1 != pos1) {
+			let pos2 = search.indexOf("&", pos1);
+			res = search.substring(pos1, (pos2 != -1 ? pos2 : search.length) )
+		}
+	}
+	return res;
+};
+
+function toogleView(current, oldEl, text, bAll) {
+	if ( !current.classList.contains('primary') ) {
+		oldEl.classList.remove('submit','primary');
+		current.classList.add('submit','primary');
+		elements.linkNewPlugin.innerHTML = translate[text] || text;
+		showListofPlugins(bAll);
+	}
 };
