@@ -36,7 +36,6 @@ const elements = {};                                          // all elements
 const isDesctop = window.AscDesktopEditor !== undefined;      // desctop detecting
 let isLoading = false;                                        // flag loading
 let loader;                                                   // loader
-var Ps;                                                       // perfect scrollbar
 let themeType = detectThemeType();                            // current theme
 const lang = detectLanguage();                                // current language
 const shortLang = lang.split('-')[0];                         // short language
@@ -161,8 +160,7 @@ window.addEventListener('message', function(message) {
 		case 'InstalledPlugins':
 			installedPlugins = message.data;
 			console.log('getInstalledPlugins: ' + (Date.now() - start));
-			if (allPlugins)
-				getAllPluginsData();
+			getInstalledPluginsImages();
 			break;
 		case 'Installed':
 			if (!message.guid) {
@@ -271,7 +269,7 @@ window.addEventListener('message', function(message) {
             document.getElementsByTagName('head')[0].appendChild(styleTheme);
 			break;
 		case 'onExternalMouseUp':
-			var evt = document.createEvent("MouseEvents");
+			let evt = document.createEvent("MouseEvents");
 			evt.initMouseEvent("mouseup", true, true, window, 1, 0, 0, 0, 0,
 				false, false, false, false, 0, null);
 
@@ -279,6 +277,32 @@ window.addEventListener('message', function(message) {
 			break;
 	};
 }, false);
+
+function getInstalledPluginsImages() {
+	let counter = 0;
+	installedPlugins.forEach(function(el, i, arr) {
+		counter++;
+		let imageUrl = getImageAsBase64(el.obj, el);
+		makeRequest(imageUrl, 'blob').then(
+			function (res) {
+				let reader = new FileReader();
+				reader.onloadend = function() {
+					arr[i].obj.imageBase64 = reader.result;
+					counter--;
+					if (!counter) {
+						console.log('load all images = ' + (Date.now() - start));
+						if (allPlugins) {
+							getAllPluginsData();
+						}
+					}				}
+				reader.readAsDataURL(res);
+			},
+			function(err) {
+				console.log(err);
+			}
+		);
+	});
+};
 
 function fetchAllPlugins() {
 	// function for fetching all plugins from config
@@ -296,13 +320,14 @@ function fetchAllPlugins() {
 	);
 };
 
-function makeRequest(url) {
+function makeRequest(url, responseType) {
 	// this function makes GET request and return promise
 	// maybe use fetch to in this function
 	isLoading = true;
 	return new Promise(function (resolve, reject) {
 		let xhr = new XMLHttpRequest();
 		xhr.open('GET', url, true);
+		if (responseType) xhr.responseType = responseType;
 		
 		xhr.onload = function () {
 			if (this.readyState == 4) {
@@ -379,6 +404,7 @@ function getAllPluginsData() {
 	// get config file for each item in config.json
 	let counter = 0;
 	allPlugins.forEach(function(pluginUrl, i, arr) {
+		// todo сделать отдельную переменную для url, чтобы потом в ней не делать реплейс
 		counter++;
 		if (pluginUrl.indexOf(":/\/") == -1) {
 			pluginUrl = ioUrl + pluginUrl + '/config.json';
@@ -389,6 +415,7 @@ function getAllPluginsData() {
 				let config = JSON.parse(response);
 				config.url = pluginUrl;
 				config.baseUrl = pluginUrl.replace('config.json','');// pluginUrl.substr(0, pluginUrl.length - "config.json".length);
+				config.imageBase64 = getImageAsBase64(config, null);
 				arr[i] = config;
 				// Ps.update();
 				if (!counter) {
@@ -441,8 +468,6 @@ function createPluginDiv(plugin, bInstalled) {
 	console.log('createPluginDiv');
 	// this function creates div (preview) for plugins
 	// TODO может сделать динамическое количество элементов в одной строке
-	// TODO врекменный флаг (переделать на загрузку картинок в фоне)
-	let notInMarket = false;
 	if (counter <= 0 || counter >= 4) {
 		row = document.createElement('div');
 		row.className = "div_row"
@@ -469,49 +494,18 @@ function createPluginDiv(plugin, bInstalled) {
 			return el.guid === plugin.guid
 		});
 	if (!plugin) {
-		notInMarket = true;
 		plugin = installed.obj;
 		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
 		plugin.url = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
 	}
-	let imageUrl = plugin.url.replace('config.json','');
-	let variations = plugin.variations[0];
-	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
-	if (variations.icons2) {
-		//
-		let icon = variations.icons2[0];
-		for (let i = 0; i < variations.icons2.length; i++) {
-			if (themeType.includes(variations.icons2[i].style)) {
-				icon = variations.icons2[i];
-				break;
-			}
-		}
-		imageUrl += icon['200%'].normal;
-	} else if (!variations.isSystem && imageUrl != '') {
-		let icon = variations.icons[0];
-		if (typeof(icon) == 'object') {
-			for (let i = 0; i < variations.icons.length; i++) {
-				if (themeType.includes(variations.icons[i].style)) {
-					icon = variations.icons[i];
-					break;
-				}
-			}
-			imageUrl += icon['200%'].normal;
-		} else {
-			imageUrl += variations.icons[0];
-		}
-	} else {
-		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
-	}
-	if (notInMarket) {
-		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
-	}
+	
+	let variations = plugin.variations[0]
 	// TODO подумать от куда брать цвет на фон под картинку (может в config добавить)
 	let name = (bTranslate && plugin.nameLocale && plugin.nameLocale[shortLang]) ? plugin.nameLocale[shortLang] : plugin.name;
 	let description = (bTranslate && variations.descriptionLocale && variations.descriptionLocale[shortLang]) ? variations.descriptionLocale[shortLang] : variations.description;
 	let template = '<div class="div_image" onclick="onClickItem(event.target)">' +
 						// временно поставил такие размеры картинки (чтобы выглядело симминтрично пока)
-						'<img style="width:56px;" src="' + imageUrl + '">' +
+						'<img style="width:56px;" src="' + plugin.imageBase64 + '">' +
 					'</div>' +
 					'<div class="div_description">'+
 						'<span class="span_name">' + name + '</span>' +
@@ -784,4 +778,42 @@ function showMarketplace() {
 	console.log('showMarketplace: ' + (Date.now() - start));
 	// убираем пока шапку, так как в плагине есть своя
 	// elements.divHeader.classList.remove('hidden');
+};
+
+function getImageAsBase64(plugin, installed) {
+	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
+	let imageUrl;
+	if (installed) {
+		let temp = installed.obj.baseUrl.replace(/\.\.\//g, '');
+		imageUrl = installed.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
+	} else {
+		imageUrl = plugin.baseUrl;
+	}
+	let variations = plugin.variations[0];
+	if (variations.icons2) {
+		let icon = variations.icons2[0];
+		for (let i = 0; i < variations.icons2.length; i++) {
+			if (themeType.includes(variations.icons2[i].style)) {
+				icon = variations.icons2[i];
+				break;
+			}
+		}
+		imageUrl += icon['200%'].normal;
+	} else if (!variations.isSystem && imageUrl != '') {
+		let icon = variations.icons[0];
+		if (typeof(icon) == 'object') {
+			for (let i = 0; i < variations.icons.length; i++) {
+				if (themeType.includes(variations.icons[i].style)) {
+					icon = variations.icons[i];
+					break;
+				}
+			}
+			imageUrl += icon['200%'].normal;
+		} else {
+			imageUrl += variations.icons[0];
+		}
+	} else {
+		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
+	}
+	return imageUrl;
 };
