@@ -16,10 +16,15 @@
  *
  */
 (function(window, undefined) {
+	let ifr; // iframe with marketplace
 
     window.Asc.plugin.init = function() {
+		// resize window
 		window.Asc.plugin.resizeWindow(550, 585, 450, 540, 0, 0);
-		// none
+		// identify iframe
+		ifr = document.getElementsByTagName('iframe')[0];
+		// send message that plugin is ready
+		ifr.contentWindow.postMessage(JSON.stringify({type: 'PluginReady'}), "*");
     };
 
     window.Asc.plugin.button = function() {
@@ -27,6 +32,7 @@
     };
 
 	window.addEventListener("message", function(message) {
+		// getting messages from marketplace
 		let data = JSON.parse(message.data);
 			
 		switch (data.type) {
@@ -55,21 +61,17 @@
 	}, false);
 
 	window.Asc.plugin.onExternalMouseUp = function() {
-		let ifr = document.getElementsByTagName('iframe')[0];
+		// mouse up event outside the plugin window
 		if (ifr && ifr.contentWindow)
 			ifr.contentWindow.postMessage(JSON.stringify({ type: 'onExternalMouseUp'}), "*");
-		var evt = document.createEvent("MouseEvents");
-		evt.initMouseEvent("mouseup", true, true, window, 1, 0, 0, 0, 0,
-			false, false, false, false, 0, null);
-
-		document.dispatchEvent(evt);
 	};
 
 	window.Asc.plugin.onThemeChanged = function(theme) {
+		// theme changed event
 		window.Asc.plugin.onThemeChangedBase(theme);
 		let style = document.getElementsByTagName('head')[0].lastChild;
-		let ifr = document.getElementsByTagName('iframe')[0];
 		if (ifr && ifr.contentWindow)
 			ifr.contentWindow.postMessage(JSON.stringify({ type: 'Theme', theme: theme, style : style.innerHTML}), "*");
 	};
+
 })(window, undefined);
