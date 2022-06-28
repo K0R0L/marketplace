@@ -23,6 +23,7 @@ const configUrl = './config.json';                                   // url to c
 const elements = {};                                                 // all elements
 const isDesctop = window.AscDesktopEditor !== undefined;             // desctop detecting
 const guidMarkeplace = 'asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}'; // guid marketplace
+const guidSettings = 'asc.{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}';   // guid settings plugins
 const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/'; // github.io url
 let isLoading = false;                                               // flag loading
 let loader;                                                          // loader
@@ -115,7 +116,9 @@ window.addEventListener('message', function(message) {
 	let installed;
 	switch (message.type) {
 		case 'InstalledPlugins':
-			installedPlugins = message.data;
+			installedPlugins = message.data.filter(function(el) {
+				return (el.guid !== guidMarkeplace && el.guid !== guidSettings);
+			});
 			console.log('getInstalledPlugins: ' + (Date.now() - start));
 			if (allPlugins)
 				getAllPluginsData();
@@ -247,20 +250,17 @@ function getInstalledPluginsImages() {
 	let count = 0;
 	installedPlugins.forEach(function(el, i, arr) {
 		// skip if plugin is in maekreplace
-		
 		let plugin = allPlugins.find(function(pl){return pl.guid === el.guid}) || allPlugins.find(function(pl){return pl === el.obj.name.toLowerCase()});
 		if (plugin)
 			return;
 
 		count++;
-		let temp = el.obj.baseUrl.replace(/\.\.\//g, '');
-		arr[i].obj.url = el.baseUrl.replace('web-apps/apps/documenteditor/main/index.html', temp);
-		let imageUrl = getImageAsBase64(el.obj, el);
+		let imageUrl = getImageUrl(el.obj, el);
 		makeRequest(imageUrl, 'blob').then(
 			function (res) {
 				let reader = new FileReader();
 				reader.onloadend = function() {
-					arr[i].obj.imageBase64 = reader.result;
+					arr[i].obj.imageUrl = reader.result;
 					count--;
 					if (!count) {
 						console.log('load all images = ' + (Date.now() - start));
@@ -393,7 +393,7 @@ function getAllPluginsData() {
 				let config = JSON.parse(response);
 				config.url = confUrl;
 				config.baseUrl = pluginUrl;
-				config.imageBase64 = getImageAsBase64(config, null);
+				config.imageUrl = getImageUrl(config, null);
 				arr[i] = config;
 				if (!count) {
 					console.log('getAllPluginsData: ' + (Date.now() - start));
@@ -424,13 +424,13 @@ function showListofPlugins(bAll) {
 	if (bAll) {
 		// show all plugins
 		allPlugins.forEach(function(plugin) {
-			if (plugin && plugin.guid !== guidMarkeplace)
+			if (plugin && plugin.guid)
 				createPluginDiv(plugin, false);
 		});
 	} else if (installedPlugins.length) {
 		// show only installed
 		installedPlugins.forEach(function(plugin) {
-			if (plugin.guid !== guidMarkeplace)
+			if (plugin.guid)
 				createPluginDiv(plugin, true);
 		});
 	} else {
@@ -481,7 +481,7 @@ function createPluginDiv(plugin, bInstalled) {
 	let description = (bTranslate && variations.descriptionLocale && variations.descriptionLocale[shortLang]) ? variations.descriptionLocale[shortLang] : variations.description;
 	let template = '<div class="div_image" onclick="onClickItem(event.target)">' +
 						// временно поставил такие размеры картинки (чтобы выглядело симминтрично пока)
-						'<img style="width:56px;" src="' + plugin.imageBase64 + '">' +
+						'<img style="width:56px;" src="' + plugin.imageUrl + '">' +
 					'</div>' +
 					'<div class="div_description">'+
 						'<span class="span_name">' + name + '</span>' +
@@ -756,38 +756,47 @@ function showMarketplace() {
 	// elements.divHeader.classList.remove('hidden');
 };
 
-function getImageAsBase64(plugin, installed) {
+function getImageUrl(plugin, installed) {
 	// get image url for current plugin
 	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
-	let imageUrl = installed ? plugin.url : plugin.baseUrl;
-	let variations = plugin.variations[0];
-	if (variations.icons2) {
-		let icon = variations.icons2[0];
-		for (let i = 0; i < variations.icons2.length; i++) {
-			if (themeType.includes(variations.icons2[i].style)) {
-				icon = variations.icons2[i];
-				break;
-			}
+	let imageUrl;
+	if (installed && installed.baseUrl.includes('http://')) {
+		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
+	} else {
+		if (plugin.baseUrl.includes('://')) {
+			imageUrl = plugin.baseUrl;
+		} else {
+			let temp = plugin.baseUrl.replace(/\.\.\//g, '');
+			let endpos = installed.baseUrl.indexOf('/', 9) + 1;
+			imageUrl = installed.baseUrl.slice(0, endpos) + temp;
 		}
-		imageUrl += icon['200%'].normal;
-	} else if (!variations.isSystem && imageUrl != '') {
-		let icon = variations.icons[0];
-		if (typeof(icon) == 'object') {
-			for (let i = 0; i < variations.icons.length; i++) {
-				if (themeType.includes(variations.icons[i].style)) {
-					icon = variations.icons[i];
+		
+		let variations = plugin.variations[0];
+		if (variations.icons2) {
+			let icon = variations.icons2[0];
+			for (let i = 0; i < variations.icons2.length; i++) {
+				if (themeType.includes(variations.icons2[i].style)) {
+					icon = variations.icons2[i];
 					break;
 				}
 			}
 			imageUrl += icon['200%'].normal;
+		} else if (!variations.isSystem && imageUrl != '') {
+			let icon = variations.icons[0];
+			if (typeof(icon) == 'object') {
+				for (let i = 0; i < variations.icons.length; i++) {
+					if (themeType.includes(variations.icons[i].style)) {
+						icon = variations.icons[i];
+						break;
+					}
+				}
+				imageUrl += icon['200%'].normal;
+			} else {
+				imageUrl += variations.icons[0];
+			}
 		} else {
-			imageUrl += variations.icons[0];
+			imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 		}
-	} else {
-		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
-	}
-	if (imageUrl.includes('http://')) {
-		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 	}
 	return imageUrl;
 };
