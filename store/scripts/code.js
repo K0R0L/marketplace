@@ -258,25 +258,25 @@ function getInstalledPluginsImages() {
 		count++;
 		let imageUrl = getImageUrl(el.obj, el);
 		arr[i].obj.imageUrl = imageUrl;
-		// пока убрал, так как нет смысла загружать картинки, если это не работает с http://
-		// makeRequest(imageUrl, 'blob').then(
-		// 	function (res) {
-		// 		let reader = new FileReader();
-		// 		reader.onloadend = function() {
-		// 			arr[i].obj.imageUrl = reader.result;
-		// 			count--;
-		// 			if (!count) {
-		// 				console.log('load all images = ' + (Date.now() - start));
-		// 				// if (allPlugins) {
-		// 					// getAllPluginsData();
-		// 				// }
-		// 			}				}
-		// 		reader.readAsDataURL(res);
-		// 	},
-		// 	function(error) {
-		// 		createError(error);
-		// 	}
-		// );
+		makeRequest(imageUrl, 'blob').then(
+			function (res) {
+				let reader = new FileReader();
+				reader.onloadend = function() {
+					arr[i].obj.imageUrl = reader.result;
+					count--;
+					if (!count) {
+						sortPlugins(false, true);
+						console.log('load all images = ' + (Date.now() - start));
+						// if (allPlugins) {
+							// getAllPluginsData();
+						// }
+					}				}
+				reader.readAsDataURL(res);
+			},
+			function(error) {
+				createError(error);
+			}
+		);
 	});
 };
 
@@ -401,7 +401,7 @@ function getAllPluginsData() {
 				if (!count) {
 					console.log('getAllPluginsData: ' + (Date.now() - start));
 					isLoading = false;
-					sortPlugins(true, true);
+					sortPlugins(true, false);
 					showListofPlugins(true);
 					toogleLoader(false);
 				}
@@ -411,7 +411,7 @@ function getAllPluginsData() {
 				createError(err);
 				if (!count) {
 					isLoading = false;
-					sortPlugins(true, true);
+					sortPlugins(true, false);
 					showListofPlugins(true);
 					toogleLoader(false);
 				}
