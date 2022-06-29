@@ -141,6 +141,7 @@ window.addEventListener('message', function(message) {
 						removed: false
 					}
 				);
+				sortPlugins(false, true);
 			} else if (installed) {
 				installed.removed = false;
 			}
@@ -256,24 +257,26 @@ function getInstalledPluginsImages() {
 
 		count++;
 		let imageUrl = getImageUrl(el.obj, el);
-		makeRequest(imageUrl, 'blob').then(
-			function (res) {
-				let reader = new FileReader();
-				reader.onloadend = function() {
-					arr[i].obj.imageUrl = reader.result;
-					count--;
-					if (!count) {
-						console.log('load all images = ' + (Date.now() - start));
-						// if (allPlugins) {
-							// getAllPluginsData();
-						// }
-					}				}
-				reader.readAsDataURL(res);
-			},
-			function(error) {
-				createError(error);
-			}
-		);
+		arr[i].obj.imageUrl = imageUrl;
+		// пока убрал, так как нет смысла загружать картинки, если это не работает с http://
+		// makeRequest(imageUrl, 'blob').then(
+		// 	function (res) {
+		// 		let reader = new FileReader();
+		// 		reader.onloadend = function() {
+		// 			arr[i].obj.imageUrl = reader.result;
+		// 			count--;
+		// 			if (!count) {
+		// 				console.log('load all images = ' + (Date.now() - start));
+		// 				// if (allPlugins) {
+		// 					// getAllPluginsData();
+		// 				// }
+		// 			}				}
+		// 		reader.readAsDataURL(res);
+		// 	},
+		// 	function(error) {
+		// 		createError(error);
+		// 	}
+		// );
 	});
 };
 
@@ -398,6 +401,7 @@ function getAllPluginsData() {
 				if (!count) {
 					console.log('getAllPluginsData: ' + (Date.now() - start));
 					isLoading = false;
+					sortPlugins(true, true);
 					showListofPlugins(true);
 					toogleLoader(false);
 				}
@@ -407,6 +411,7 @@ function getAllPluginsData() {
 				createError(err);
 				if (!count) {
 					isLoading = false;
+					sortPlugins(true, true);
 					showListofPlugins(true);
 					toogleLoader(false);
 				}
@@ -438,7 +443,7 @@ function showListofPlugins(bAll) {
 		createNotification('No plugins istalled.');
 	}
 
-}
+};
 
 function createPluginDiv(plugin, bInstalled) {
 	console.log('createPluginDiv');
@@ -820,5 +825,18 @@ function toogleView(current, oldEl, text, bAll) {
 		current.classList.add('submit','primary');
 		elements.linkNewPlugin.innerHTML = translate[text] || text;
 		showListofPlugins(bAll);
+	}
+};
+
+function sortPlugins(bAll, bInst) {
+	if (bAll) {
+		allPlugins.sort(function(a, b) {
+			return a.name.localeCompare(b.name);
+		});
+	}
+	if (bInst) {
+		installedPlugins.sort(function(a, b) {
+			return a.obj.name.localeCompare(b.obj.name);
+		});
 	}
 };
