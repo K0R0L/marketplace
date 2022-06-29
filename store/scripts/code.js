@@ -116,10 +116,11 @@ window.addEventListener('message', function(message) {
 	let installed;
 	switch (message.type) {
 		case 'InstalledPlugins':
+			// TODO может быть в этом методе ещё передавать иконки в виде base64 (только чтобы были темы и scale нужно присылать сразу все)
 			installedPlugins = message.data.filter(function(el) {
 				return (el.guid !== guidMarkeplace && el.guid !== guidSettings);
 			});
-			console.log('getInstalledPlugins: ' + (Date.now() - start));
+			// console.log('getInstalledPlugins: ' + (Date.now() - start));
 			if (allPlugins)
 				getAllPluginsData();
 			break;
@@ -258,25 +259,25 @@ function getInstalledPluginsImages() {
 		count++;
 		let imageUrl = getImageUrl(el.obj, el);
 		arr[i].obj.imageUrl = imageUrl;
-		makeRequest(imageUrl, 'blob').then(
-			function (res) {
-				let reader = new FileReader();
-				reader.onloadend = function() {
-					arr[i].obj.imageUrl = reader.result;
-					count--;
-					if (!count) {
-						sortPlugins(false, true);
-						console.log('load all images = ' + (Date.now() - start));
-						// if (allPlugins) {
-							// getAllPluginsData();
-						// }
-					}				}
-				reader.readAsDataURL(res);
-			},
-			function(error) {
-				createError(error);
-			}
-		);
+		// пока убрал, так как нет смысла загружать картинки, если это не работает с http://
+		// makeRequest(imageUrl, 'blob').then(
+		// 	function (res) {
+		// 		let reader = new FileReader();
+		// 		reader.onloadend = function() {
+		// 			arr[i].obj.imageUrl = reader.result;
+		// 			count--;
+		// 			if (!count) {
+		// 				console.log('load all images = ' + (Date.now() - start));
+		// 				// if (allPlugins) {
+		// 					// getAllPluginsData();
+		// 				// }
+		// 			}				}
+		// 		reader.readAsDataURL(res);
+		// 	},
+		// 	function(error) {
+		// 		createError(error);
+		// 	}
+		// );
 	});
 };
 
@@ -399,7 +400,7 @@ function getAllPluginsData() {
 				config.imageUrl = getImageUrl(config, null);
 				arr[i] = config;
 				if (!count) {
-					console.log('getAllPluginsData: ' + (Date.now() - start));
+					// console.log('getAllPluginsData: ' + (Date.now() - start));
 					isLoading = false;
 					sortPlugins(true, false);
 					showListofPlugins(true);
@@ -446,7 +447,7 @@ function showListofPlugins(bAll) {
 };
 
 function createPluginDiv(plugin, bInstalled) {
-	console.log('createPluginDiv');
+	// console.log('createPluginDiv');
 	// this function creates div (preview) for plugins
 	// TODO может сделать динамическое количество элементов в одной строке
 	if (counter <= 0 || counter >= 4) {
@@ -702,7 +703,7 @@ function getTranslation() {
 					bTranslate = true;
 					makeRequest('./translations/' + (fullName || shortName) + '.json').then(
 						function(res) {
-							console.log('getTranslation: ' + (Date.now() - start));
+							// console.log('getTranslation: ' + (Date.now() - start));
 							translate = JSON.parse(res);
 							onTranslate();
 						},
@@ -756,7 +757,7 @@ function onTranslate() {
 function showMarketplace() {
 	// show main window to user
 	elements.divBody.classList.remove('hidden');
-	console.log('showMarketplace: ' + (Date.now() - start));
+	// console.log('showMarketplace: ' + (Date.now() - start));
 	// убираем пока шапку, так как в плагине есть своя
 	// elements.divHeader.classList.remove('hidden');
 };
@@ -765,7 +766,7 @@ function getImageUrl(plugin, installed) {
 	// get image url for current plugin
 	// TODO решить вопрос со scale, чтобы выбирать нужную иконку
 	let imageUrl;
-	if (installed && installed.baseUrl.includes('http://')) {
+	if ( installed && ( installed.baseUrl.includes('http://') || installed.baseUrl.includes('file:') ) ) {
 		imageUrl = './resources/img/defaults/' + themeType + '/icon@2x.png';
 	} else {
 		if (plugin.baseUrl.includes('://')) {
