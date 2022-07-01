@@ -132,6 +132,7 @@ label.header {
 	background: rgb(52,126,232);
 	cursor: pointer;
 	border-radius: 3px 3px 0 0;
+	height: 75px;
 }
 
 .span_name {

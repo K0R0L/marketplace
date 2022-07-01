@@ -452,7 +452,6 @@ function showListofPlugins(bAll) {
 		// if no istalled plugins and my plugins button was clicked
 		createNotification('No plugins istalled.');
 	}
-
 };
 
 function createPluginDiv(plugin, bInstalled) {
@@ -489,7 +488,7 @@ function createPluginDiv(plugin, bInstalled) {
 	let description = (bTranslate && variations.descriptionLocale && variations.descriptionLocale[shortLang]) ? variations.descriptionLocale[shortLang] : variations.description;
 	let template = '<div class="div_image" onclick="onClickItem(event.target)">' +
 						// временно поставил такие размеры картинки (чтобы выглядело симминтрично пока)
-						'<img style="width:56px; margin:10px" src="' + plugin.imageUrl + '">' +
+						'<img style="width:56px;" src="' + plugin.imageUrl + '">' +
 					'</div>' +
 					'<div class="div_description">'+
 						'<span class="span_name">' + name + '</span>' +
