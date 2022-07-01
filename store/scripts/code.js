@@ -672,7 +672,7 @@ function setDivHeight() {
 	if (Ps) Ps.update();
 	// console.log(Math.round(window.devicePixelRatio * 100));
 	if (elements.divScreen) {
-		let height = elements.divScreen.parentNode.clientHeight - elements.divScreen.previousElementSibling.clientHeight - 20 + "px";
+		let height = elements.divScreen.parentNode.clientHeight - elements.divScreen.previousElementSibling.clientHeight - 40 + "px";
 		elements.divScreen.style.height = height;
 		elements.divScreen.style.maxHeight = height;
 	}

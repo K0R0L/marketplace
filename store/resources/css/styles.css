@@ -248,13 +248,14 @@ label.header {
 }
 
 .div_selected_preview {
-	width:100%;
+	width: 100%;
 	height: calc(100% - 25px);
 	margin-top: 5px;
 }
 
 .div_selected_image {
-	margin:10px 0 10px;
+	/* margin:10px 0 10px; */
+	margin-bottom: 10px;
 }
 
 .image_preview {
@@ -311,4 +312,5 @@ label.header {
 	min-height: 50px;
 	overflow: auto;
 	overflow-wrap: break-word;
+	margin-top: 20px;
 }
