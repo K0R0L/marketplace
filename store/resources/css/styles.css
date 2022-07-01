@@ -8,6 +8,10 @@ html, body {
 	font-size: 12px !important;
 }
 
+.white_bg {
+	background-color: #fff !important;
+}
+
 img {
 	pointer-events: none;
 }
@@ -97,12 +101,9 @@ label.header {
 	inset: 90px 0px 0px;
 	overflow: hidden;
 	display: flex;
-	flex-flow: column;
-}
-
-.div_row {
-	display: flex;
-	margin: 0 10px 20px 5px;
+	flex-wrap: wrap;
+	margin-right: 5px;
+	margin-left: 15px;
 }
 
 .div_item {
@@ -110,10 +111,12 @@ label.header {
 	flex-flow: column;
 	border: 1px solid #c0c0c0;
 	border-radius: 5px;
-	width: calc((100% - 60px)/3);
-	margin: 0 10px;
+	max-width: 160px;
+	min-width: 160px;
+	margin: 0 20px 20px 0;
 	position: relative;
-	height: 225px;
+	min-height: 225px;
+	max-height: 225px;
 }
 
 .div_description {

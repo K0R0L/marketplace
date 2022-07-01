@@ -28,8 +28,6 @@ const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/'; // github.i
 let isLoading = false;                                               // flag loading
 let loader;                                                          // loader
 let themeType = detectThemeType();                                   // current theme
-let counter = 0;                                                     // counter of number elements in each row inside list of plugins
-let row;                                                             // elemet that represents a row inside list of plugins 
 const lang = detectLanguage();                                       // current language
 const shortLang = lang.split('-')[0];                                // short language
 let bTranslate = false;                                              // flag translate or not
@@ -235,7 +233,13 @@ window.addEventListener('message', function(message) {
 			toogleLoader(false);
 			break;
 		case 'Theme':
+			if (message.theme.type)
+				themeType = message.theme.type;
+
 			let rule = '\n.asc-plugin-loader{background-color:' + message.theme['background-normal'] +';padding: 10px;display: flex;justify-content: center;align-items: center;border-radius: 5px;}';
+			if (themeType.includes('light')) {
+				this.document.getElementsByTagName('body')[0].classList.add('white_bg');
+			}
 			let styleTheme = document.createElement('style');
             styleTheme.type = 'text/css';
             styleTheme.innerHTML = message.style + rule;
@@ -432,7 +436,6 @@ function showListofPlugins(bAll) {
 	// TODO возможно надо дождаться получения переводов ()
 	// show list of plugins
 	elements.divMain.innerHTML = "";
-	counter = 0;
 	if (bAll) {
 		// show all plugins
 		allPlugins.forEach(function(plugin) {
@@ -455,13 +458,6 @@ function showListofPlugins(bAll) {
 function createPluginDiv(plugin, bInstalled) {
 	// console.log('createPluginDiv');
 	// this function creates div (preview) for plugins
-	// TODO может сделать динамическое количество элементов в одной строке
-	if (counter <= 0 || counter >= 4) {
-		row = document.createElement('div');
-		row.className = "div_row"
-		elements.divMain.append(row);
-		counter = 1;
-	}
 
 	let div = document.createElement('div');
 	div.id = plugin.guid;
@@ -511,8 +507,7 @@ function createPluginDiv(plugin, bInstalled) {
 						+
 					'</div>';
 	div.innerHTML = template;
-	row.append(div);
-	counter++;
+	elements.divMain.append(div);
 	Ps.update();
 };
 
