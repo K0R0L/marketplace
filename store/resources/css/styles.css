@@ -5,7 +5,7 @@ html, body {
 	overflow: hidden;
 	display: flex;
 	flex-flow: column;
-	font-size: 12px !important;
+	/* font-size: 12px !important; */
 }
 
 .white_bg {
@@ -17,7 +17,7 @@ img {
 }
 
 button {
-	font-size: 13px !important;
+	/* font-size: 13px !important; */
 	margin: 0px;
 	min-width: 70px;
 }
@@ -90,7 +90,7 @@ label.header {
 	display: flex;
 	align-items: center;
 	margin-right: 5px;
-	font-size: 13px;
+	/* font-size: 13px; */
 }
 
 .toolbar_buttons {
@@ -139,6 +139,12 @@ label.header {
 .span_name {
 	margin: 10px;
 	font-weight: bold;
+}
+
+.span_name_selected {
+	margin: 10px;
+	font-weight: bold;
+	font-size: 14px;
 }
 
 .span_description {
@@ -208,7 +214,7 @@ label.header {
 .div_preview {
 	/* border: 1px solid green; */
 	height: 100%;
-	font-size: 13px !important;
+	/* font-size: 13px !important; */
 }
 
 .link_submit:hover {
@@ -259,7 +265,7 @@ label.header {
 
 .div_selected_info {
 	margin: 5px 0 5px;
-	font-size: 13px;
+	/* font-size: 13px; */
 }
 
 .span_caption {
@@ -298,4 +304,11 @@ label.header {
 .error_caption {
 	font-size: 15px;
 	color: red;
+}
+
+.div_description_selected {
+	max-height: 50px;
+	min-height: 50px;
+	overflow: auto;
+	overflow-wrap: break-word;
 }

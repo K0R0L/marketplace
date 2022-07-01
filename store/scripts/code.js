@@ -564,7 +564,7 @@ function onClickItem(target) {
 	let guid = target.parentNode.getAttribute('data-guid');
 	let divPreview = document.createElement('div');
 	divPreview.id = 'div_preview';
-	divPreview.className = 'div_preview noselect';
+	divPreview.className = 'div_preview';
 
 	let installed = installedPlugins.find(function(el){return(el.guid===guid);});
 	let plugin = allPlugins.find(function(el){return (el.guid == guid);});

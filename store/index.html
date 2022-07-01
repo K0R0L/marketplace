@@ -24,14 +24,14 @@
 	<script type="text/javascript" src="https://onlyoffice.github.io/sdkjs-plugins/v1/plugins-ui.js"></script>
 	<script type="text/javascript" src="scripts/code.js"></script>
 </head>
-	<body>
-		<div id="div_header" class="header noselect hidden">
+	<body class="noselect">
+		<div id="div_header" class="header hidden">
 			<!-- <span id="arrow" class="arrow hidden">&#8592;</span> -->
 			<label id="lbl_header" class="aboutlable header">Manage plugins</label>
 			<span id="close" class="close">&times;</span>
 		</div>
 		<div id="div_body" class="div_body hidden">
-			<div id="toolbar" class="toolbar noselect">
+			<div id="toolbar" class="toolbar">
 				<div class="toolbar_buttons">
 					<button id="btn_myPlugins" class="btn_menu_left btn-text-default">My plugins</button>
 					<button id="btn_marketplace" class="btn_menu_right btn-text-default active">Marketplace</button>
@@ -41,7 +41,7 @@
 					<a id="link_newPlugin" class="aboutlink link_submit" target="blank" href="https://github.com/ONLYOFFICE/onlyoffice.github.io/pulls">Submit your own plugin</a>
 				</div>
 			</div>
-			<div id="div_main" class="main_content noselect"></div>
+			<div id="div_main" class="main_content"></div>
 		</div>
 		<div id="div_selected_toolbar" class="div_selected_toolbar hidden">
 			<!-- временно пока сюда добавил стрелку, чтобы назад можно было вернуться -->
@@ -51,7 +51,7 @@
 				<img id="img_icon" style="height:56px">
 			</div>
 			<div class="div_selected_description">
-				<span id="span_name" class="span_name"></span>
+				<span id="span_name" class="span_name_selected"></span>
 				<div>
 					<span id="span_offered_caption" class="span_description">Offered by:</span>
 					<span id="span_offered"></span>
@@ -71,11 +71,10 @@
 					<hr>
 				</div>
 				<div id="div_selected_preview" class="div_selected_preview">
-					<div>
+					<div class="div_description_selected">
 						<span id="span_selected_description"></span>
 					</div>
 					<div id="div_selected_image" class="div_selected_image">
-						<!-- TODO проблема со скрином (не получается его нормально позиционировать при изменении размера, плюс на нём нифига не видно, может использовать скрин только плагина) -->
 						<img id="image_screenshot" class="image_preview">
 					</div>
 				</div>
