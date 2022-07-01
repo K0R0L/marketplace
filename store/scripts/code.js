@@ -493,7 +493,7 @@ function createPluginDiv(plugin, bInstalled) {
 	let description = (bTranslate && variations.descriptionLocale && variations.descriptionLocale[shortLang]) ? variations.descriptionLocale[shortLang] : variations.description;
 	let template = '<div class="div_image" onclick="onClickItem(event.target)">' +
 						// временно поставил такие размеры картинки (чтобы выглядело симминтрично пока)
-						'<img style="width:56px;" src="' + plugin.imageUrl + '">' +
+						'<img style="width:56px; margin:10px" src="' + plugin.imageUrl + '">' +
 					'</div>' +
 					'<div class="div_description">'+
 						'<span class="span_name">' + name + '</span>' +
@@ -817,8 +817,9 @@ function getUrlSearchValue(key) {
 	let res = '';
 	if (window.location && window.location.search) {
 		let search = window.location.search;
-		let pos1 = search.indexOf(key + '=') + key.length + 1;
+		let pos1 = search.indexOf(key + '=');
 		if (-1 != pos1) {
+			pos1 += key.length + 1;
 			let pos2 = search.indexOf("&", pos1);
 			res = search.substring(pos1, (pos2 != -1 ? pos2 : search.length) )
 		}
