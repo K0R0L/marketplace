@@ -117,12 +117,18 @@ window.addEventListener('message', function(message) {
 	switch (message.type) {
 		case 'InstalledPlugins':
 			// TODO может быть в этом методе ещё передавать иконки в виде base64 (только чтобы были темы и scale нужно присылать сразу все)
-			installedPlugins = message.data.filter(function(el) {
-				return (el.guid !== guidMarkeplace && el.guid !== guidSettings);
-			});
+			if (message.data) {
+				installedPlugins = message.data.filter(function(el) {
+					return (el.guid !== guidMarkeplace && el.guid !== guidSettings);
+				});
+			} else {
+				installedPlugins = [];
+			}
+
 			// console.log('getInstalledPlugins: ' + (Date.now() - start));
 			if (allPlugins)
 				getAllPluginsData();
+			
 			break;
 		case 'Installed':
 			if (!message.guid) {
@@ -194,7 +200,7 @@ window.addEventListener('message', function(message) {
 				}
 			}
 
-			if (elements.btnMyPlugins.classList.contains('primary')) {
+			if (elements.btnMyPlugins.classList.contains('active')) {
 				if (plugin) {
 					showListofPlugins(false);
 				} else {
@@ -821,9 +827,9 @@ function getUrlSearchValue(key) {
 };
 
 function toogleView(current, oldEl, text, bAll) {
-	if ( !current.classList.contains('primary') ) {
-		oldEl.classList.remove('submit','primary');
-		current.classList.add('submit','primary');
+	if ( !current.classList.contains('active') ) {
+		oldEl.classList.remove('active');
+		current.classList.add('active');
 		elements.linkNewPlugin.innerHTML = translate[text] || text;
 		showListofPlugins(bAll);
 	}
