@@ -19,6 +19,7 @@ img {
 button {
 	font-size: 13px !important;
 	margin: 0px;
+	min-width: 70px;
 }
 
 div.header {
@@ -237,7 +238,7 @@ label.header {
 	/* border: 1px solid red; */
 	margin: 0 15px;
 	position: absolute;
-	inset: 160px 0px 0px;
+	inset: 130px 0px 0px;
 }
 
 .div_selected_preview {
