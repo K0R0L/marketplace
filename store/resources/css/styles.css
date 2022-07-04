@@ -38,13 +38,15 @@ label.header {
 .btn_menu_right {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
-	border-left-width: 0;
+	border-left-width: 0 !important;
 	margin-left: -1px;
+	font-weight: normal !important;
 }
 
 .btn_menu_left {
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
+	font-weight: normal !important;
 }
 
 /* .div-loader {
@@ -176,6 +178,8 @@ label.header {
 .div_notification {
 	display: flex;
 	justify-content: center;
+	align-items: center;
+	width: 100%;
 }
 
 .span_notification {

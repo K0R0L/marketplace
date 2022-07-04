@@ -25,15 +25,14 @@ const isDesctop = window.AscDesktopEditor !== undefined;             // desctop 
 const guidMarkeplace = 'asc.{AA2EA9B6-9EC2-415F-9762-634EE8D9A95E}'; // guid marketplace
 const guidSettings = 'asc.{8D67F3C5-7736-4BAE-A0F2-8C7127DC4BB8}';   // guid settings plugins
 const ioUrl = 'https://onlyoffice.github.io/sdkjs-plugins/content/'; // github.io url
-let isLoading = false;                                               // flag loading
+let isPluginLoading = false;                                         // flag plugins loading
 let loader;                                                          // loader
 let themeType = detectThemeType();                                   // current theme
 const lang = detectLanguage();                                       // current language
 const shortLang = lang.split('-')[0];                                // short language
 let bTranslate = false;                                              // flag translate or not
-let translate = {'Loading': 'Loading'};                              // translations for current language
-
-//TODO сделать сортировку плагинов по алфавиту
+let isTranslationLoading = false;                                    // flag translation loading
+let translate = {'Loading': 'Loading'};                              // translations for current language (thouse will necessary if we don't get tranlation file)
 
 // it's necessary because we show loader before all (and getting translations too)
 switch (shortLang) {
@@ -70,6 +69,7 @@ fetchAllPlugins();
 
 window.onload = function() {
 	// init element
+	Ps = new PerfectScrollbar('#' + "div_main", {});
 	initElemnts();
 
 	if (shortLang == "en") {
@@ -102,7 +102,7 @@ window.onload = function() {
 		console.log('close window');
 	};
 
-	if (isLoading) {
+	if (isPluginLoading || isTranslationLoading) {
 		toogleLoader(true, "Loading");
 	}
 };
@@ -198,7 +198,7 @@ window.addEventListener('message', function(message) {
 				}
 			}
 
-			if (elements.btnMyPlugins.classList.contains('active')) {
+			if (elements.btnMyPlugins.classList.contains('primary')) {
 				if (plugin) {
 					showListofPlugins(false);
 				} else {
@@ -293,6 +293,7 @@ function getInstalledPluginsImages() {
 
 function fetchAllPlugins() {
 	// function for fetching all plugins from config
+	isPluginLoading = true;
 	makeRequest(configUrl).then(
 		function(response) {
 			allPlugins = JSON.parse(response);
@@ -300,9 +301,10 @@ function fetchAllPlugins() {
 				getAllPluginsData();
 		},
 		function(err) {
-			createError(err);
-			isLoading = false;
-			toogleLoader(false);
+			createError(new Error('Problem with loading markeplace config.'));
+			isPluginLoading = false;
+			allPlugins = [];
+			showMarketplace();
 		}
 	);
 };
@@ -310,29 +312,34 @@ function fetchAllPlugins() {
 function makeRequest(url, responseType) {
 	// this function makes GET request and return promise
 	// maybe use fetch to in this function
-	isLoading = true;
+	// isLoading = true;
 	return new Promise(function (resolve, reject) {
-		let xhr = new XMLHttpRequest();
-		xhr.open('GET', url, true);
-		if (responseType)
-			xhr.responseType = responseType;
+		try {
+			let xhr = new XMLHttpRequest();
+			xhr.open('GET', url, true);
+			if (responseType)
+				xhr.responseType = responseType;
+			
+			xhr.onload = function () {
+				if (this.readyState == 4) {
+					if (this.status == 200 || location.href.indexOf("file:") == 0) {
+						resolve(this.response);
+					}
+					if (this.status >= 400) {
+						reject(new Error(this.response));
+					}
+				}
+			};
+
+			xhr.onerror = function (err) {
+				reject(err);
+			};
+
+			xhr.send(null);
+		} catch (error) {
+			reject(error);
+		}
 		
-		xhr.onload = function () {
-			if (this.readyState == 4) {
-				if (this.status == 200 || location.href.indexOf("file:") == 0) {
-					resolve(this.response);
-				}
-				if (this.status >= 400) {
-					reject(new Error(this.response));
-				}
-			}
-		};
-
-		xhr.onerror = function (err) {
-			reject(err);
-		};
-
-		xhr.send(null);
 	});
 };
 
@@ -395,9 +402,10 @@ function toogleLoader(show, text) {
 function getAllPluginsData() {
 	// get config file for each item in config.json
 	getInstalledPluginsImages();
+	isPluginLoading = true;
 	let count = 0;
+	let Unloaded = [];
 	allPlugins.forEach(function(pluginUrl, i, arr) {
-		// todo сделать отдельную переменную для url, чтобы потом в ней не делать реплейс
 		count++;
 		pluginUrl = (pluginUrl.indexOf(":/\/") == -1) ? pluginUrl = ioUrl + pluginUrl + '/' : pluginUrl;
 		let confUrl = pluginUrl + 'config.json';
@@ -411,46 +419,41 @@ function getAllPluginsData() {
 				arr[i] = config;
 				if (!count) {
 					// console.log('getAllPluginsData: ' + (Date.now() - start));
-					isLoading = false;
+					removeUnloaded(Unloaded);
 					sortPlugins(true, false);
-					showListofPlugins(true);
-					toogleLoader(false);
+					isPluginLoading = false;
+					showMarketplace();
 				}
 			},
 			function(err) {
-				// TODO решить проблему, если не получили конфиг, чтобы у нас не было лишних (пустых элементов)
-				createError(err);
+				count--;
+				Unloaded.push(i);
+				createError(new Error('Problem with loading plugin config.\nConfig: ' + confUrl));
 				if (!count) {
-					isLoading = false;
+					removeUnloaded(Unloaded);
 					sortPlugins(true, false);
-					showListofPlugins(true);
-					toogleLoader(false);
+					isPluginLoading = false;
+					showMarketplace();
 				}
 			}
 		);
 	})
-	Ps = new PerfectScrollbar('#' + "div_main", {});
 };
 
-function showListofPlugins(bAll) {
-	// TODO возможно надо дождаться получения переводов ()
+function showListofPlugins(bAll, sortedArr) {
 	// show list of plugins
 	elements.divMain.innerHTML = "";
-	if (bAll) {
-		// show all plugins
-		allPlugins.forEach(function(plugin) {
+	let arr = ( sortedArr ? sortedArr : (bAll ? allPlugins : installedPlugins) );
+	if (arr.length) {
+		arr.forEach(function(plugin) {
 			if (plugin && plugin.guid)
-				createPluginDiv(plugin, false);
+				createPluginDiv(plugin, !bAll);
 		});
-	} else if (installedPlugins.length) {
-		// show only installed
-		installedPlugins.forEach(function(plugin) {
-			if (plugin.guid)
-				createPluginDiv(plugin, true);
-		});
+		setTimeout(function(){Ps.update()});
 	} else {
 		// if no istalled plugins and my plugins button was clicked
-		createNotification('No plugins istalled.');
+		let notification = bAll ? 'Problem with loading plugins.' : 'No installed plugins.';
+		createNotification(translate[notification]);
 	}
 };
 
@@ -686,6 +689,7 @@ window.onresize = function() {
 function getTranslation() {
 	// gets translation for current language
 	if (shortLang != "en") {
+		isTranslationLoading = true
 		makeRequest('./translations/langs.json').then(
 			function(response) {
 				let arr = JSON.parse(response);
@@ -709,30 +713,25 @@ function getTranslation() {
 						},
 						function(err) {
 							createError(new Error('Cannot load translation for current language.'));
-							showMarketplace();
+							createDefaultTranslations();
 						}
 					);
 				} else {
-					showMarketplace();
+					createDefaultTranslations();
 				}	
 			},
 			function(err) {
-				createError(err);
-				showMarketplace();
+				createError(new Error('Cannot load translations list file.'));
+				createDefaultTranslations();
 			}
 		);
 	} else {
-		translate  = {
-						"Submit your own plugin": "Submit your own plugin",
-						"Install plugin manually": "Install plugin manually",
-						"Install": "Install",
-						"Remove": "Remove",
-						"Update": "Update",
-					 };
+		createDefaultTranslations();
 	}
 };
 
 function onTranslate() {
+	isTranslationLoading = false;
 	// translates elements on current language
 	elements.linkNewPlugin.innerHTML = translate["Submit your own plugin"];
 	elements.btnMyPlugins.innerHTML = translate["My plugins"];
@@ -756,10 +755,16 @@ function onTranslate() {
 
 function showMarketplace() {
 	// show main window to user
-	elements.divBody.classList.remove('hidden');
-	// console.log('showMarketplace: ' + (Date.now() - start));
-	// убираем пока шапку, так как в плагине есть своя
-	// elements.divHeader.classList.remove('hidden');
+	if (!isPluginLoading && !isTranslationLoading) {
+		showListofPlugins(true);
+		toogleLoader(false);
+
+	
+		elements.divBody.classList.remove('hidden');
+		// console.log('showMarketplace: ' + (Date.now() - start));
+		// убираем пока шапку, так как в плагине есть своя
+		// elements.divHeader.classList.remove('hidden');
+	}
 };
 
 function getImageUrl(plugin, installed) {
@@ -822,9 +827,9 @@ function getUrlSearchValue(key) {
 };
 
 function toogleView(current, oldEl, text, bAll) {
-	if ( !current.classList.contains('active') ) {
-		oldEl.classList.remove('active');
-		current.classList.add('active');
+	if ( !current.classList.contains('primary') ) {
+		oldEl.classList.remove('submit', 'primary');
+		current.classList.add('submit', 'primary');
 		elements.linkNewPlugin.innerHTML = translate[text] || text;
 		showListofPlugins(bAll);
 	}
@@ -841,4 +846,22 @@ function sortPlugins(bAll, bInst) {
 			return a.obj.name.localeCompare(b.obj.name);
 		});
 	}
+};
+
+function createDefaultTranslations() {
+	translate = {
+		"Submit your own plugin": "Submit your own plugin",
+		"Install plugin manually": "Install plugin manually",
+		"Install": "Install",
+		"Remove": "Remove",
+		"Update": "Update",
+	};
+	isTranslationLoading = false;
+	showMarketplace();
+};
+
+function removeUnloaded(unloaded) {
+	unloaded.forEach(function(el){
+		allPlugins.splice(el, 1);
+	})
 };
