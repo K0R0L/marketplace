@@ -32,6 +32,7 @@ const lang = detectLanguage();                                       // current 
 const shortLang = lang.split('-')[0];                                // short language
 let bTranslate = false;                                              // flag translate or not
 let isTranslationLoading = false;                                    // flag translation loading
+let isFrameLoading = true;
 let translate = {'Loading': 'Loading'};                              // translations for current language (thouse will necessary if we don't get tranlation file)
 
 // it's necessary because we show loader before all (and getting translations too)
@@ -71,8 +72,9 @@ window.onload = function() {
 	// init element
 	Ps = new PerfectScrollbar('#' + "div_main", {});
 	initElemnts();
+	isFrameLoading = false;
 
-	if (shortLang == "en") {
+	if (shortLang == "en" || (!isPluginLoading && !isTranslationLoading)) {
 		// if nothing to translate
 		showMarketplace();
 	}
@@ -755,7 +757,7 @@ function onTranslate() {
 
 function showMarketplace() {
 	// show main window to user
-	if (!isPluginLoading && !isTranslationLoading) {
+	if (!isPluginLoading && !isTranslationLoading && !isFrameLoading) {
 		showListofPlugins(true);
 		toogleLoader(false);
 
